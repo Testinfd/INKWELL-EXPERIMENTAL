@@ -1,20 +1,19 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useReducer } from 'react';
-import EnhancedPaper from '../components/EnhancedPaper';
-import CustomizationForm from '../components/CustomizationForm';
+import React, { useRef, useEffect } from 'react';
+import Sidebar from '../components/sidebar/Sidebar';
 import DrawingCanvas from '../components/DrawingCanvas';
 import LoadingSpinner from '../components/LoadingSpinner';
-import FontUploader from '../components/FontUploader';
-import { generateImages, downloadAsPDF, deleteAllImages } from '../utils/generate';
+import { generateCanvases, downloadAsPDF } from '../utils/generate';
 import { sanitizeRichTextContent } from '../utils/sanitize';
 import { PaperSizes } from '../types';
 import 'katex/dist/katex.min.css';
-import { Descendant } from 'slate';
 import RichTextEditor from '../components/RichTextEditor';
 import { slateValueToHtml, htmlToSlateValue } from '../utils/slate-serializer';
-import PlaceholderOverlay from '../components/PlaceholderOverlay';
 import ErrorBoundary from '../components/ErrorBoundary';
+import useStore from '../store/useStore';
+import OutputDisplay from '../components/output/OutputDisplay';
+import PaperPreview from '../components/paper/PaperPreview';
 
 const PAPER_SIZES: PaperSizes = {
   A4: { width: 210, height: 297 },
@@ -51,113 +50,35 @@ const PAGE_EFFECTS = [
   { value: "no-effect", label: "No Effect" }
 ];
 
-// Paper texture URLs
-const PAPER_TEXTURES = [
-  { value: "", label: "None" },
-  { value: "/paper-textures/basic.jpg", label: "Basic Paper" },
-  { value: "/paper-textures/recycled.jpg", label: "Recycled Paper" },
-  { value: "/paper-textures/notebook.jpg", label: "Notebook Paper" }
-];
-
-// Example texts for different sections
-const EXAMPLE_MAIN_TEXT = `<p>The laws of physics help us understand the natural world. For example, Newton's Second Law of Motion can be expressed as:</p>
-<div>$$F = m \\\\cdot a$$</div>
-<p>Where <em>F</em> is the net force applied, <em>m</em> is the mass of the object, and <em>a</em> is the acceleration.</p>
-<p>Another important equation in physics is Einstein's mass-energy equivalence:</p>
-<div>$$E = mc^2$$</div>
-<p>Where <em>E</em> represents energy, <em>m</em> represents mass, and <em>c</em> represents the speed of light in a vacuum.</p>
-<p>The quadratic formula gives us the solution to equations in the form $ax^2 + bx + c = 0$:</p>
-<div>$$x = \\\\frac{-b \\\\pm \\\\sqrt{b^2 - 4ac}}{2a}$$</div>`;
-
-const EXAMPLE_SIDE_NOTE = `<p>Key formulas:</p>
-<p>Velocity: $v = \\\\frac{d}{t}$</p>
-<p>Acceleration: $a = \\\\frac{\\\\Delta v}{\\\\Delta t}$</p>
-<p>Work: $W = F \\\\cdot d$</p>
-<p>Kinetic Energy: $E_k = \\\\frac{1}{2}mv^2$</p>`;
-
-const EXAMPLE_TOP_NOTE = `<p>Physics Notes - Chapter 4: Forces and Motion</p>`;
-
-// Define action types for the reducer
-type StateAction = 
-  | { type: 'SET_TEXT'; payload: string }
-  | { type: 'SET_SIDE_TEXT'; payload: string }
-  | { type: 'SET_TOP_TEXT'; payload: string }
-  | { type: 'TOGGLE_EXAMPLE_TEXT'; payload: boolean };
-
-// Define the state shape
-interface AppState {
-  text: string;
-  sideText: string;
-  topText: string;
-  isExampleVisible: boolean;
-}
-
-// Initial state
-const initialState: AppState = {
-  text: '',
-  sideText: '',
-  topText: '',
-  isExampleVisible: false,
-};
-
-// Reducer function
-const appStateReducer = (state: AppState, action: StateAction): AppState => {
-  switch (action.type) {
-    case 'SET_TEXT':
-      return { ...state, text: action.payload };
-    case 'SET_SIDE_TEXT':
-      return { ...state, sideText: action.payload };
-    case 'SET_TOP_TEXT':
-      return { ...state, topText: action.payload };
-    case 'TOGGLE_EXAMPLE_TEXT':
-      const isVisible = action.payload;
-      return {
-        ...state,
-        isExampleVisible: isVisible,
-        text: isVisible ? EXAMPLE_MAIN_TEXT : '',
-        sideText: isVisible ? EXAMPLE_SIDE_NOTE : '',
-        topText: isVisible ? EXAMPLE_TOP_NOTE : '',
-      };
-    default:
-      return state;
-  }
-};
-
 export default function Home() {
-  const [state, dispatch] = useReducer(appStateReducer, initialState);
+  // Destructure only the state and actions needed in this component
+  const {
+    text,
+    sideText,
+    topText,
+    showExternalText,
+    inkColor,
+    fontSize,
+    letterSpacing,
+    wordSpacing,
+    fontFamily,
+    isDark,
+    drawingCanvasVisible,
+    isGenerating,
+    pageEffect,
+    resolution,
+    paperSize,
+    setText,
+    setSideText,
+    setTopText,
+    setIsDark,
+    setDrawingCanvasVisible,
+    setIsGenerating,
+    setOutputImages,
+  } = useStore();
 
-  // Paper Content State (now managed by reducer)
-  const { text, sideText, topText, isExampleVisible } = state;
-  
-  // External Text Areas
-  const [showExternalText, setShowExternalText] = useState<boolean>(false);
-  
-  // Paper Styling State
-  const [inkColor, setInkColor] = useState<string>('#000f55');
-  const [paperColor] = useState<string>('#ffffff');
-  const [fontSize, setFontSize] = useState<string>('10');
-  const [letterSpacing, setLetterSpacing] = useState<string>('0');
-  const [wordSpacing, setWordSpacing] = useState<string>('0');
-  const [lineHeight] = useState<string>('1.5');
-  const [topPadding, setTopPadding] = useState<string>('5');
-  const [fontFamily, setFontFamily] = useState<string>("'Homemade Apple', cursive");
-  
-  // UI State
-  const [isDark, setIsDark] = useState<boolean>(false);
-  const [hasLines, setHasLines] = useState<boolean>(true);
-  const [hasMargins, setHasMargins] = useState<boolean>(true);
-  const [drawingCanvasVisible, setDrawingCanvasVisible] = useState<boolean>(false);
-  
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [pageEffect, setPageEffect] = useState<string>('shadows');
-  const [resolution, setResolution] = useState<string>('2');
-  const [paperSize, setPaperSize] = useState<string>('A4');
-  
-  // New features state
-  const [randomizeHandwriting, setRandomizeHandwriting] = useState<boolean>(true);
-  const [realisticEffects, setRealisticEffects] = useState<boolean>(true);
-  const [selectedPaperTexture, setSelectedPaperTexture] = useState<string>("");
-  const [customPaperTexture, setCustomPaperTexture] = useState<string | null>(null);
+  // Constants
+  const lineHeight = '1.5';
   
   // Refs
   const paperRef = useRef<HTMLDivElement>(null);
@@ -167,9 +88,7 @@ export default function Home() {
   useEffect(() => {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setIsDark(prefersDark);
-    document.documentElement.classList.toggle('dark', prefersDark);
-    document.documentElement.classList.toggle('light', !prefersDark);
-  }, []);
+  }, [setIsDark]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
@@ -189,61 +108,24 @@ export default function Home() {
     }
   }, [paperSize, paperRef]);
 
-  const handlePaperTextureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (!e.target?.result) return;
-      setCustomPaperTexture(e.target.result as string);
-      setSelectedPaperTexture('custom');
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const getPaperTextureUrl = (): string | undefined => {
-    if (selectedPaperTexture === 'custom' && customPaperTexture) {
-      return customPaperTexture;
-    } else if (selectedPaperTexture) {
-      return selectedPaperTexture;
-    }
-    return undefined;
-  };
-
-  const handleToggleExternalText = () => {
-    setShowExternalText(prev => !prev);
-  };
-
-  const handleToggleRandomizeHandwriting = () => {
-    setRandomizeHandwriting(prev => !prev);
-  };
-
   const handleGenerateImages = async () => {
     const paperEl = paperRef.current;
-    const outputContainer = document.getElementById('output');
-    if (!paperEl || !outputContainer) return;
-    
-    const paperContentEl = paperEl.querySelector('.paper-content') as HTMLElement;
-    if (!paperContentEl) return;
-    
-    setIsGenerating(true);
+    if (!paperEl) return;
 
+    setIsGenerating(true);
     try {
-      await generateImages(
-        paperEl,
-        paperContentEl,
-        parseFloat(resolution),
+      const canvases = await generateCanvases(paperEl, {
+        resolution: parseFloat(resolution),
         pageEffect,
-        outputContainer,
         fontFamily,
-        `${fontSize}pt`,
+        fontSize: `${fontSize}pt`,
         lineHeight,
-        `${letterSpacing}px`,
-        `${wordSpacing}px`,
-        paperColor,
-        inkColor
-      );
+        letterSpacing: `${letterSpacing}px`,
+        wordSpacing: `${wordSpacing}px`,
+        inkColor,
+      });
+      const imageUrls = canvases.map((canvas) => canvas.toDataURL('image/jpeg'));
+      setOutputImages(imageUrls);
     } catch (error) {
       console.error('Error generating images:', error);
     } finally {
@@ -251,171 +133,45 @@ export default function Home() {
     }
   };
 
-  const handleDeleteAll = () => {
-    const outputContainer = document.getElementById('output');
-    if (!outputContainer) return;
-    
-    deleteAllImages(outputContainer);
-  };
-
-  const handleDownloadPDF = () => {
-    const size = PAPER_SIZES[paperSize as keyof typeof PAPER_SIZES] || PAPER_SIZES.A4;
-    downloadAsPDF(size);
-  };
-
   const handleAddToPaper = (dataUrl: string) => {
     const imgTag = `<img src="${dataUrl}" style="max-width: 100%;" />`;
-    dispatch({ type: 'SET_TEXT', payload: text + imgTag });
+    setText(text + imgTag);
     setDrawingCanvasVisible(false);
   };
 
-  const handleContentChange = (newHtml: string) => {
-    dispatch({ type: 'SET_TEXT', payload: sanitizeRichTextContent(newHtml, true) });
-  };
-
   const handleSideTextChange = (newHtml: string) => {
-    dispatch({ type: 'SET_SIDE_TEXT', payload: sanitizeRichTextContent(newHtml, true) });
+    setSideText(sanitizeRichTextContent(newHtml, true));
   };
 
   const handleTopTextChange = (newHtml: string) => {
-    dispatch({ type: 'SET_TOP_TEXT', payload: sanitizeRichTextContent(newHtml, true) });
-  };
-
-  const handleFontSizeChange = (value: string) => {
-    const numValue = parseInt(value, 10);
-    if (numValue > 30) {
-      alert('Font-size is too big, try up to 30');
-      return;
-    }
-    setFontSize(value);
-  };
-
-  const handleLetterSpacingChange = (value: string) => {
-    const numValue = parseInt(value, 10);
-    if (numValue > 40) {
-      alert('Letter-spacing is too big, try up to 40');
-      return;
-    }
-    setLetterSpacing(value);
-  };
-
-  const handleWordSpacingChange = (value: string) => {
-    const numValue = parseInt(value, 10);
-    if (numValue > 100) {
-      alert('Word-spacing is too big, try up to 100');
-      return;
-    }
-    setWordSpacing(value);
-  };
-
-  const handleTopPaddingChange = (value: string) => {
-    setTopPadding(value);
+    setTopText(sanitizeRichTextContent(newHtml, true));
   };
 
   const toggleTheme = () => {
-    setIsDark(prev => !prev);
-  };
-
-  const handleToggleExampleText = () => {
-    dispatch({ type: 'TOGGLE_EXAMPLE_TEXT', payload: !isExampleVisible });
+    setIsDark(!isDark);
   };
 
   return (
     <ErrorBoundary>
-      <main className="app-container">
-        <h1 className="app-title">Text to Handwriting</h1>
-        
-        {isGenerating && <LoadingSpinner />}
+      <main className="min-h-screen bg-[var(--background-primary)] text-[var(--font-color-primary)] p-4 lg:p-8">
+        <div className="max-w-screen-2xl mx-auto">
+          <h1 className="text-center text-3xl lg:text-4xl font-bold mb-6">
+            Text to Handwriting
+          </h1>
 
-        <section className="app-content">
-          <div className="app-layout">
-            <div className="preview-container">
-              <div className="paper-wrapper">
-                <EnhancedPaper
-                  paperRef={paperRef}
-                  initialValue={text}
-                  onContentChange={handleContentChange}
-                  sideText={sideText}
-                  onSideTextChange={handleSideTextChange}
-                  topText={topText}
-                  onTopTextChange={handleTopTextChange}
-                  inkColor={inkColor}
-                  paperColor={paperColor}
-                  shadowColor="#0005"
-                  hasLines={hasLines}
-                  hasMargins={hasMargins}
-                  pageEffect={pageEffect}
-                  fontFamily={fontFamily}
-                  fontSize={`${fontSize}pt`}
-                  letterSpacing={`${letterSpacing}px`}
-                  wordSpacing={`${wordSpacing}px`}
-                  topPadding={`${topPadding}px`}
-                  randomizeHandwriting={randomizeHandwriting}
-                  realisticInkEffects={realisticEffects}
-                  paperTextureUrl={getPaperTextureUrl()}
-                />
-                
-                <div className="paper-actions">
-                  <button 
-                    type="button" 
-                    className="example-button" 
-                    onClick={handleToggleExampleText}
-                    title="Toggle example text"
-                  >
-                    {isExampleVisible ? "Hide Example" : "Show Example"}
-                  </button>
-                  
-                  <button 
-                    type="button" 
-                    className="draw-button" 
-                    onClick={() => setDrawingCanvasVisible(true)}
-                  >
-                    Add Drawing
-                  </button>
-                </div>
-              </div>
-              
-              <div className="output-container">
-                <div id="output" className="output">
-                  <div className="output-image-controls" style={{display: 'none'}}>
-                    <button id="delete-all-button" onClick={handleDeleteAll}>Delete All</button>
-                    <button id="download-as-pdf-button" onClick={handleDownloadPDF}>Download as PDF</button>
-                  </div>
-                </div>
-              </div>
+          {isGenerating && <LoadingSpinner />}
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-8">
+            <div className="flex flex-col items-center gap-6">
+              <PaperPreview paperRef={paperRef} />
+              <OutputDisplay />
             </div>
                 
-            <div className="controls-container">
-              <CustomizationForm 
-                fontFamily={fontFamily}
-                setFontFamily={setFontFamily}
-                fontSize={fontSize}
-                setFontSize={handleFontSizeChange}
-                letterSpacing={letterSpacing}
-                setLetterSpacing={handleLetterSpacingChange}
-                wordSpacing={wordSpacing}
-                setWordSpacing={handleWordSpacingChange}
-                topPadding={topPadding}
-                setTopPadding={handleTopPaddingChange}
-                inkColor={inkColor}
-                setInkColor={setInkColor}
-                generateImages={handleGenerateImages}
-                hasLines={hasLines}
-                setHasLines={setHasLines}
-                hasMargins={hasMargins}
-                setHasMargins={setHasMargins}
-                pageEffect={pageEffect}
-                setPageEffect={setPageEffect}
-                resolution={resolution}
-                setResolution={setResolution}
-                paperSize={paperSize}
-                setPaperSize={setPaperSize}
+            <div className="space-y-6">
+              <Sidebar
                 handwritingFonts={HANDWRITING_FONTS}
                 pageEffects={PAGE_EFFECTS}
-                sideNotesVisible={showExternalText}
-                toggleSideNotes={handleToggleExternalText}
-                randomizeHandwriting={randomizeHandwriting}
-                toggleRandomizeHandwriting={handleToggleRandomizeHandwriting}
+                generateImages={handleGenerateImages}
               />
 
               {/* External Text Editors */}
@@ -466,11 +222,10 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Font upload component */}
-              <FontUploader onFontLoaded={(fontName) => setFontFamily(fontName)} />
+              {/* Font upload is now handled within the HandwritingSection of the sidebar */}
             </div>
           </div>
-        </section>
+        </div>
 
         {drawingCanvasVisible && (
           <DrawingCanvas

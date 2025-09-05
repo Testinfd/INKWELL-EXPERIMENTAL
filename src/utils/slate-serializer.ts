@@ -1,4 +1,4 @@
-import { Descendant } from 'slate';
+import { Descendant, Text, Element } from 'slate';
 
 // Default Slate value when html is empty or during SSR
 export const DEFAULT_SLATE_VALUE: Descendant[] = [
@@ -8,17 +8,20 @@ export const DEFAULT_SLATE_VALUE: Descendant[] = [
   },
 ];
 
+type SlateNode = Descendant | Descendant[] | string | null;
+
 // More modern approach to HTML conversion using the DOM
-export const deserialize = (el: globalThis.Node): any => {
+export const deserialize = (el: globalThis.Node): SlateNode => {
   if (el.nodeType === 3) {
-    return { text: el.textContent };
+    return { text: el.textContent || '' };
   } else if (el.nodeType !== 1) {
     return null;
   }
 
-  const children = Array.from(el.childNodes)
+  const children: Descendant[] = Array.from(el.childNodes)
     .map((node) => deserialize(node))
-    .flat();
+    .flat()
+    .filter((node): node is Descendant => node !== null && typeof node !== 'string');
 
   if (children.length === 0) {
     children.push({ text: '' });
@@ -46,7 +49,7 @@ export const deserialize = (el: globalThis.Node): any => {
       if (element.classList.contains('math-formula')) {
         return {
           type: 'math',
-          formula: element.dataset.formula,
+          formula: element.dataset.formula || '',
           inline: element.dataset.inline === 'true',
           children: [{ text: '' }],
         };
@@ -105,43 +108,38 @@ export const htmlToSlateValue = (html: string): Descendant[] => {
 
 // Modern approach to serialize Slate nodes to HTML
 export const serialize = (node: Descendant): string => {
-  // Handle text nodes
-  if ('text' in node) {
-    let text = node.text;
-    if ('bold' in node && node.bold) {
-      text = `<strong>${text}</strong>`;
+  if (Text.isText(node)) {
+    let string = node.text;
+    if (node.bold) {
+      string = `<strong>${string}</strong>`;
     }
-    if ('italic' in node && node.italic) {
-      text = `<em>${text}</em>`;
+    if (node.italic) {
+      string = `<em>${string}</em>`;
     }
-    if ('underline' in node && node.underline) {
-      text = `<u>${text}</u>`;
+    if (node.underline) {
+      string = `<u>${string}</u>`;
     }
-    return text;
+    return string;
   }
 
-  // Handle elements with children
-  if ('children' in node) {
-    const children = (node.children as Descendant[])
-      .map((n: Descendant) => serialize(n))
-      .join('');
-    
-    if ((node as any).type === 'paragraph') {
-      return `<p>${children}</p>`;
+  const children = node.children.map(n => serialize(n)).join('');
+
+  if (Element.isElement(node)) {
+    switch (node.type) {
+      case 'paragraph':
+        return `<p>${children}</p>`;
+      case 'math':
+        const isInline = node.inline;
+        const tag = isInline ? 'span' : 'div';
+        return `<${tag} class="math-formula" data-formula="${node.formula || ''}" data-inline="${isInline}">
+          <span class="katex-formula">${node.formula || ''}</span>
+        </${tag}>`;
+      default:
+        return children;
     }
-    
-    if ((node as any).type === 'math' && 'formula' in node) {
-      const isInline = (node as any).inline;
-      const tag = isInline ? 'span' : 'div';
-      return `<${tag} class="math-formula" data-formula="${(node as any).formula}" data-inline="${isInline}">
-        <span class="katex-formula">${(node as any).formula}</span>
-      </${tag}>`;
-    }
-    
-    return children;
   }
-  
-  return '';
+
+  return children;
 };
 
 // Convert Slate's value to HTML

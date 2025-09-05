@@ -18,7 +18,8 @@
     "react-katex": "^3.1.0",
     "slate": "^0.117.2",
     "slate-history": "^0.113.1",
-    "slate-react": "^0.117.3"
+    "slate-react": "^0.117.3",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

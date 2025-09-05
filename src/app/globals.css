@@ -38,15 +38,18 @@ body {
 }
 body.dark {
   /* Dark Theme */
-  --background-primary: #1a1a1a; /* Darker Gray */
-  --font-color-primary: #ecf0f1; /* Light Gray */
-  --font-color-secondary: #a0b0c0; /* Lighter gray for subtitles in dark mode */
-  --elevation-background: #2c3e50; /* Dark Blue-Gray */
-  --link-color: #3498db; /* Bright Blue */
-  --primary-color-rgb: 52, 152, 219; /* Ensure this is defined for dark mode too */
-  --accent-color-rgb: 231, 76, 60; /* Ensure this is defined for dark mode too */
-  --label-color: #bdc3c7; /* Light Silver */
-  --field-borders: #34495e; /* Darker Blue-Gray */
+  --background-primary: #111827; /* Cool Gray 900 */
+  --font-color-primary: #f9fafb; /* Gray 50 */
+  --font-color-secondary: #9ca3af; /* Gray 400 */
+  --elevation-background: #1f2937; /* Cool Gray 800 */
+  --link-color: #60a5fa; /* Blue 400 */
+  --primary-color: #3b82f6; /* Blue 500 */
+  --primary-color-rgb: 59, 130, 246;
+  --secondary-color: #10b981; /* Emerald 500 */
+  --accent-color: #ef4444; /* Red 500 */
+  --accent-color-rgb: 239, 68, 68;
+  --label-color: #d1d5db; /* Gray 300 */
+  --field-borders: #374151; /* Cool Gray 700 */
   --primary-button-bg: var(--primary-color);
   --primary-button-color: #ffffff;
   --secondary-button-bg: var(--secondary-color);
@@ -204,29 +207,10 @@ ul.info-ul > li {
   padding: 5px 5px;
 }
 
-.shadow {
-  box-shadow: 12px 12px 24px 0 rgba(0, 0, 0, 0.2);
-}
-.display-flex {
-  display: flex;
-}
-.display-flex.padded-flex > div {
-  padding: 0px 10px;
-}
-.display-flex.padded-flex > div:first-child {
-  padding-left: unset;
-}
-.flex-1 {
-  flex: 1;
-}
-.padding-around {
-  padding-right: 30px;
-  padding-left: 30px;
-}
-.padding-up-down {
-  padding-top: 6px;
-  padding-bottom: 7px;
-}
+/*
+  Removed utility-like classes such as .shadow, .display-flex, .flex-1, .padding-around, etc.
+  These will be replaced with Tailwind CSS classes directly in the components for better maintainability.
+*/
 
 /* Other Styles */
 .generate-image-section {
