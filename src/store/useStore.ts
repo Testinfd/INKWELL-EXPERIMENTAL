@@ -1,6 +1,4 @@
 import { create } from 'zustand';
-import { Descendant } from 'slate';
-import { slateValueToHtml } from '../utils/slate-serializer';
 
 // Hardcoded data that might be moved to a config file later
 const EXAMPLE_MAIN_TEXT = `<p>The laws of physics help us understand the natural world. For example, Newton's Second Law of Motion can be expressed as:</p>

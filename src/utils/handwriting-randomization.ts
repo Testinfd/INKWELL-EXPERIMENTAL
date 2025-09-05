@@ -41,7 +41,7 @@ export function createRandomizedTextStyle(options: {
   wordSpacing: number;
   baselineJitter: number;
 }) {
-  const { fontSize, letterSpacing, wordSpacing, baselineJitter } = options;
+  const { letterSpacing, wordSpacing, baselineJitter } = options;
   
   return {
     transform: `translateY(${getRandomBaselineJitter(baselineJitter)}px)`,
@@ -283,7 +283,6 @@ export function applyWordVariations(element: HTMLElement, intensity: number = 0.
       
       // Create document fragment to replace text node
       const fragment = document.createDocumentFragment();
-      let currentPosition = 0;
       
       words.forEach((word, i) => {
         if (wordIndexesToVary.has(i)) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import useStore from '../store/useStore';
 import RichTextEditor from './RichTextEditor';
 import PlaceholderOverlay from './PlaceholderOverlay';
