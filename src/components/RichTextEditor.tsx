@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { createEditor, BaseEditor, Descendant, Node, NodeEntry, Transforms, Element, Text, Editor } from 'slate';
-import { Slate, Editable, withReact, ReactEditor } from 'slate-react';
+import { createEditor, BaseEditor, Descendant, Transforms, Element, Text } from 'slate';
+import { Slate, Editable, withReact, ReactEditor, RenderElementProps, RenderLeafProps } from 'slate-react';
 import { withHistory } from 'slate-history';
-import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
@@ -140,7 +139,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   // Manually handle updates to reflect external changes
   useEffect(() => {
     // Only reset the editor if it's empty, to avoid resetting during edits.
-    if (editor.children.length === 1 && (editor.children[0] as any).children[0].text === '') {
+    const firstNode = editor.children[0] as CustomElement;
+    if (editor.children.length === 1 && firstNode.children[0].text === '') {
       editor.children = value;
       editor.onChange();
     }
@@ -148,52 +148,19 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   const [mounted, setMounted] = useState(false);
   
-  // Make sure value is always valid
-  const safeValue = useMemo(() => {
-    if (!value || !Array.isArray(value) || value.length === 0) {
-      console.warn("Received invalid Slate value, using default value:", value);
-      return DEFAULT_VALUE;
-    }
-    
-    // Ensure every node has a valid structure
-    const validatedValue = value.map(node => {
-      // Check if node is a text node
-      if ('text' in node) {
-        return node;
-      }
-      
-      // Check if node is an element without type
-      if (!('type' in node)) {
-        return { type: 'paragraph', children: [{ text: '' }] } as CustomElement;
-      }
-      
-      // Check if node has children
-      if (!('children' in node) || !Array.isArray(node.children) || node.children.length === 0) {
-        return { 
-          ...node, 
-          children: [{ text: '' }] 
-        } as CustomElement;
-      }
-      
-      return node;
-    });
-    
-    return validatedValue as Descendant[];
-  }, [value]);
-  
   // Set mounted state after component mounts to avoid hydration mismatch
   useEffect(() => {
     setMounted(true);
   }, []);
 
   // Error handling for DOM operations
-  const handleDOMError = useCallback((error: any) => {
+  const handleDOMError = useCallback((error: Error) => {
     console.warn('Slate DOM error suppressed:', error?.message || 'Unknown error');
     // Suppress errors to prevent component crashes
     return true;
   }, []);
 
-  const renderElement = useCallback((props: any) => {
+  const renderElement = useCallback((props: RenderElementProps) => {
     switch (props.element.type) {
       case 'math':
         return <MathElement {...props} />;
@@ -202,7 +169,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   }, []);
 
-  const renderLeaf = useCallback((props: any) => {
+  const renderLeaf = useCallback((props: RenderLeafProps) => {
     return <Leaf {...props} />;
   }, []);
 
@@ -362,14 +329,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   );
 };
 
-const DefaultElement = (props: any) => {
+const DefaultElement = (props: RenderElementProps) => {
   return <div {...props.attributes} style={{ margin: '0', padding: '0' }}>{props.children}</div>;
 };
 
-const MathElement = (props: any) => {
-  const { attributes, children, element } = props;
-  const formula = element.formula;
-  const isInline = element.inline;
+const MathElement = ({ attributes, children, element }: RenderElementProps) => {
+  const formula = (element as CustomElement).formula;
+  const isInline = (element as CustomElement).inline;
   
   return (
     <span 
@@ -377,19 +343,17 @@ const MathElement = (props: any) => {
       contentEditable={false} 
       style={{ display: isInline ? 'inline-block' : 'block', margin: '5px 0' }}
     >
-      {isInline ? (
+      {isInline && formula ? (
         <InlineMath math={formula} />
       ) : (
-        <BlockMath math={formula} />
+        <BlockMath math={formula || ''} />
       )}
       {children}
     </span>
   );
 };
 
-const Leaf = (props: any) => {
-  let { attributes, children, leaf } = props;
-  
+const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
   if (leaf.bold) {
     children = <strong>{children}</strong>;
   }

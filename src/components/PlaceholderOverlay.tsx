@@ -33,8 +33,6 @@ const PlaceholderOverlay: React.FC<PlaceholderOverlayProps> = ({
     onDismiss();
   };
 
-  if (!visible) return null;
-
   // Process the exampleText to properly render LaTeX formulas
   const processedHtml = exampleText.replace(
     /\$\$(.*?)\$\$|\$(.*?)\$/g,
@@ -74,6 +72,8 @@ const PlaceholderOverlay: React.FC<PlaceholderOverlayProps> = ({
       });
     }
   }, [visible, exampleText]);
+
+  if (!visible) return null;
 
   return (
     <div 
