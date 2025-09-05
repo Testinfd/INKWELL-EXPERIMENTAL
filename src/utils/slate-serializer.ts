@@ -1,5 +1,13 @@
 import { Descendant, Text, Element } from 'slate';
 
+type CustomText = {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  handwriting?: boolean;
+};
+
 // Default Slate value when html is empty or during SSR
 export const DEFAULT_SLATE_VALUE: Descendant[] = [
   {
@@ -35,7 +43,7 @@ export const deserialize = (el: globalThis.Node): SlateNode => {
     case 'br':
       return '\n';
     case 'p':
-      return { type: 'paragraph', children };
+      return { type: 'paragraph', children: children.filter((child): child is CustomText => Text.isText(child)) };
     case 'strong':
     case 'b':
       return children.map((child) => ({ ...child, bold: true }));
@@ -55,7 +63,7 @@ export const deserialize = (el: globalThis.Node): SlateNode => {
         };
       }
       if (element.nodeName.toLowerCase() === 'div') {
-        return { type: 'paragraph', children };
+        return { type: 'paragraph', children: children.filter((child): child is CustomText => Text.isText(child)) };
       }
       return children;
     default:
@@ -99,7 +107,7 @@ export const htmlToSlateValue = (html: string): Descendant[] => {
     const processedHtml = convertMathToHtml(html);
     const doc = new DOMParser().parseFromString(processedHtml, 'text/html');
     const slateContent = deserialize(doc.body);
-    return slateContent.length > 0 ? slateContent : DEFAULT_SLATE_VALUE;
+    return slateContent && Array.isArray(slateContent) && slateContent.length > 0 ? slateContent : DEFAULT_SLATE_VALUE;
   } catch (error) {
     console.error('Error parsing HTML to Slate value:', error);
     return DEFAULT_SLATE_VALUE;

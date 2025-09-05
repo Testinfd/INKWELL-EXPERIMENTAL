@@ -5,7 +5,7 @@ import useStore from '../../store/useStore';
 import EnhancedPaper from '../EnhancedPaper';
 
 interface PaperPreviewProps {
-  paperRef: React.RefObject<HTMLDivElement>;
+  paperRef: React.RefObject<HTMLDivElement | null>;
 }
 
 const PaperPreview: React.FC<PaperPreviewProps> = ({ paperRef }) => {

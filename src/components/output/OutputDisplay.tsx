@@ -14,17 +14,7 @@ const PAPER_SIZES: PaperSizes = {
 };
 
 const OutputDisplay = () => {
-  const {
-    outputImages,
-    deleteAllImages,
-    deleteImage,
-    paperSize,
-  } = useStore((state) => ({
-    outputImages: state.outputImages,
-    deleteAllImages: state.deleteAllImages,
-    deleteImage: state.deleteImage,
-    paperSize: state.paperSize,
-  }));
+  const { outputImages, deleteAllImages, deleteImage, paperSize } = useStore();
 
   const handleDownloadPDF = () => {
     if (outputImages.length === 0) {

@@ -145,12 +145,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     setMounted(true);
   }, []);
 
-  // Error handling for DOM operations
-  const handleDOMError = useCallback((error: Error) => {
-    console.warn('Slate DOM error suppressed:', error?.message || 'Unknown error');
-    // Suppress errors to prevent component crashes
-    return true;
-  }, []);
 
   const renderElement = useCallback((props: RenderElementProps) => {
     switch (props.element.type) {
@@ -282,7 +276,6 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Editable
             renderElement={renderElement}
             renderLeaf={renderLeaf}
-            onError={handleDOMError}
             style={{
               color: inkColor,
               fontFamily,
