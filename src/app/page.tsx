@@ -4,7 +4,7 @@ import React, { useRef, useEffect } from 'react';
 import Sidebar from '../components/sidebar/Sidebar';
 import DrawingCanvas from '../components/DrawingCanvas';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { generateCanvases, downloadAsPDF } from '../utils/generate';
+import { generateCanvases } from '../utils/generate';
 import { sanitizeRichTextContent } from '../utils/sanitize';
 import { PaperSizes } from '../types';
 import 'katex/dist/katex.min.css';

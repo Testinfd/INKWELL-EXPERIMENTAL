@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { createEditor, BaseEditor, Descendant, Transforms, Element, Text } from 'slate';
+import { createEditor, BaseEditor, Descendant, Transforms, Text } from 'slate';
 import { Slate, Editable, withReact, ReactEditor, RenderElementProps, RenderLeafProps } from 'slate-react';
 import { withHistory } from 'slate-history';
 import 'katex/dist/katex.min.css';
@@ -40,14 +40,6 @@ interface RichTextEditorProps {
   wordSpacing: string;
   className?: string;
 }
-
-// Default value to use if value is undefined or invalid
-const DEFAULT_VALUE: Descendant[] = [
-  {
-    type: 'paragraph',
-    children: [{ text: '' }],
-  },
-];
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,

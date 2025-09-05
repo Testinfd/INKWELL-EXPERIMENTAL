@@ -1,6 +1,5 @@
 import { loadHtml2Canvas } from './html2canvas-loader';
 import { jsPDF } from 'jspdf';
-import { PaperSizes } from '../types';
 
 /**
  * Shows a user-friendly error message.
